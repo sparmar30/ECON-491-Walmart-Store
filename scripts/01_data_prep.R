@@ -47,6 +47,9 @@ final_store_daily_sales <- complete_sales_history %>%
   select(store_id, date, total_quantity, state_id, day_id, day_number, everything()) %>%
   arrange(store_id, date)
 
+# Save the prepared dataset as a new file. This does not change the raw CSVs.
+write.csv(final_store_daily_sales, "data/store_daily_sales_prepared.csv", row.names = FALSE)
+
 # Validation checks for the prepared time-series dataset.
 unique_stores <- sort(unique(final_store_daily_sales$store_id))
 unique_states <- sort(unique(final_store_daily_sales$state_id))
