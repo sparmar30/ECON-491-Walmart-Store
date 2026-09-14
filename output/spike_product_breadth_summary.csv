@@ -1,0 +1,4 @@
+"store_id","products_checked","products_above_baseline","products_at_or_below_baseline","max_single_product_quantity","max_single_product_difference","top_10_product_difference_share"
+"CA_1",3049,1362,1687,69,51,0.0903923471509774
+"CA_2",3049,1425,1624,60,31,0.0736677115987461
+"CA_3",3049,1379,1670,112,61,0.103817439075926

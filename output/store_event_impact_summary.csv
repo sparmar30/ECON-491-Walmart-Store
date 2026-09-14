@@ -1,0 +1,81 @@
+"store_id","state_id","event_name","avg_lift"
+"CA_1","CA","Christmas",-3980.4
+"CA_1","CA","Father's day",-1090.5
+"CA_1","CA","Halloween",-664.2
+"CA_1","CA","LaborDay",1173
+"CA_1","CA","Mother's day",-1035.5
+"CA_1","CA","NewYear",-1044.2
+"CA_1","CA","OrthodoxEaster + Easter",-2476
+"CA_1","CA","Thanksgiving",-1233.4
+"CA_2","CA","Christmas",-2740.1
+"CA_2","CA","Father's day",-83.5
+"CA_2","CA","Halloween",22.5
+"CA_2","CA","LaborDay",1299.4
+"CA_2","CA","Mother's day",-329
+"CA_2","CA","NewYear",-315.5
+"CA_2","CA","OrthodoxEaster + Easter",-812
+"CA_2","CA","Thanksgiving",-1024.7
+"CA_3","CA","Christmas",-5805.2
+"CA_3","CA","Father's day",-1072.5
+"CA_3","CA","Halloween",-992
+"CA_3","CA","LaborDay",1530
+"CA_3","CA","Mother's day",-1204.66666666667
+"CA_3","CA","NewYear",-1638.6
+"CA_3","CA","OrthodoxEaster + Easter",-2854
+"CA_3","CA","Thanksgiving",-1741.2
+"CA_4","CA","Christmas",-2168.7
+"CA_4","CA","Father's day",-365.5
+"CA_4","CA","Halloween",-160.5
+"CA_4","CA","LaborDay",258.6
+"CA_4","CA","Mother's day",-386
+"CA_4","CA","NewYear",-647.3
+"CA_4","CA","OrthodoxEaster + Easter",-1068
+"CA_4","CA","Thanksgiving",-686.2
+"TX_1","TX","Christmas",-2882.7
+"TX_1","TX","Father's day",-48
+"TX_1","TX","Halloween",-356.5
+"TX_1","TX","LaborDay",822.4
+"TX_1","TX","Mother's day",-376.833333333333
+"TX_1","TX","NewYear",-461.9
+"TX_1","TX","OrthodoxEaster + Easter",-1303
+"TX_1","TX","Thanksgiving",-94.1
+"TX_2","TX","Christmas",-3682
+"TX_2","TX","Father's day",-407.75
+"TX_2","TX","Halloween",-612
+"TX_2","TX","LaborDay",1221.2
+"TX_2","TX","Mother's day",-693
+"TX_2","TX","NewYear",-579.6
+"TX_2","TX","OrthodoxEaster + Easter",-1394
+"TX_2","TX","Thanksgiving",-415
+"TX_3","TX","Christmas",-3096.8
+"TX_3","TX","Father's day",-321
+"TX_3","TX","Halloween",-375.6
+"TX_3","TX","LaborDay",658.8
+"TX_3","TX","Mother's day",-372
+"TX_3","TX","NewYear",-640.2
+"TX_3","TX","OrthodoxEaster + Easter",-1683
+"TX_3","TX","Thanksgiving",-741.7
+"WI_1","WI","Christmas",-2784.1
+"WI_1","WI","Father's day",-979.75
+"WI_1","WI","Halloween",-243.1
+"WI_1","WI","LaborDay",568.6
+"WI_1","WI","Mother's day",-855.833333333333
+"WI_1","WI","NewYear",-613.9
+"WI_1","WI","OrthodoxEaster + Easter",-2555
+"WI_1","WI","Thanksgiving",-1240.5
+"WI_2","WI","Christmas",-3472.4
+"WI_2","WI","Father's day",-1152.25
+"WI_2","WI","Halloween",-374.8
+"WI_2","WI","LaborDay",569.8
+"WI_2","WI","Mother's day",-656.166666666667
+"WI_2","WI","NewYear",-1042.4
+"WI_2","WI","OrthodoxEaster + Easter",-2898
+"WI_2","WI","Thanksgiving",-1785.4
+"WI_3","WI","Christmas",-3209.6
+"WI_3","WI","Father's day",-365.25
+"WI_3","WI","Halloween",-472.4
+"WI_3","WI","LaborDay",976.8
+"WI_3","WI","Mother's day",-428
+"WI_3","WI","NewYear",-1085.6
+"WI_3","WI","OrthodoxEaster + Easter",-1387
+"WI_3","WI","Thanksgiving",-472.8
