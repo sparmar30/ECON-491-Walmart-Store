@@ -1,0 +1,216 @@
+---
+title: "Walmart Sales Time Series Analysis"
+subtitle: "ECON 491"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+    embed-resources: true
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(ggplot2)
+})
+```
+
+# Introduction
+
+This report analyzes the Walmart M5 sales data at the store-day level before building an econometric forecasting model. The original sales files contain product-level unit sales for Walmart stores over time, with days stored as columns such as `d_1`, `d_2`, and so on. For this exploratory analysis, the product-level sales were aggregated to total daily quantity sold for each store. The goal is to describe the time series, identify seasonality, investigate outliers, and decide what variables may be worth considering later in a forecasting or regression model.
+
+# Data
+
+The final analysis dataset covers January 29, 2011 through May 22, 2016. The data are daily, and the cleaned dataset contains 10 Walmart stores across 3 states: California, Texas, and Wisconsin. The quantity variable, `total_quantity`, represents the total number of units sold across all products in a given store on a given date. Therefore, one observation in the final dataset represents one Walmart store on one date.
+
+The prepared dataset contains 19,410 observations, equal to 10 stores multiplied by 1,941 daily dates. The stores are `CA_1`, `CA_2`, `CA_3`, `CA_4`, `TX_1`, `TX_2`, `TX_3`, `WI_1`, `WI_2`, and `WI_3`.
+
+```{r}
+#| label: load-data
+sales <- read.csv("../data/store_daily_sales_prepared.csv", check.names = FALSE) |>
+  mutate(date = as.Date(date))
+
+summary_values <- data.frame(
+  metric = c("Start date", "End date", "Frequency", "Stores", "States", "Observations"),
+  value = c(
+    as.character(min(sales$date)),
+    as.character(max(sales$date)),
+    "Daily",
+    length(unique(sales$store_id)),
+    length(unique(sales$state_id)),
+    nrow(sales)
+  )
+)
+
+summary_values
+```
+
+# Data Preparation
+
+The preparation step combines `sales_train_validation.csv` and `sales_test_validation.csv` into one continuous sales history. The train file contains `d_1` through `d_1913`, while the test file contains `d_1914` through `d_1941`. These files contain the same product-store series across different time periods rather than different products.
+
+The original sales data are wide: each row is a product-store combination, and each day is a separate column. For time-series analysis, the data were reshaped so each day becomes a row. Quantities were then summed across all products for each `store_id` and day. This aggregation was done before joining calendar variables. Calendar information was then joined using the day identifier, such as `d_1`, `d_2`, and `d_1941`. Price was not aggregated in this stage because prices require a weighted-average treatment and cannot simply be summed like quantities.
+
+```{r}
+#| label: data-prep-code
+#| eval: false
+# Main preparation logic from scripts/01_data_prep.R
+aggregate_sales_by_store_day <- function(sales_data) {
+  sales_data |>
+    select(store_id, state_id, starts_with("d_")) |>
+    pivot_longer(
+      cols = starts_with("d_"),
+      names_to = "day_id",
+      values_to = "quantity"
+    ) |>
+    mutate(
+      quantity = as.numeric(quantity),
+      day_number = as.integer(sub("^d_", "", day_id))
+    ) |>
+    group_by(store_id, state_id, day_id, day_number) |>
+    summarise(total_quantity = sum(quantity, na.rm = TRUE), .groups = "drop")
+}
+
+complete_sales_history <- bind_rows(sales_train_agg, sales_test_agg)
+
+calendar_with_day <- calendar |>
+  mutate(
+    day_number = row_number(),
+    day_id = paste0("d_", day_number),
+    date = as.Date(date)
+  )
+
+final_store_daily_sales <- complete_sales_history |>
+  left_join(calendar_with_day, by = c("day_id", "day_number")) |>
+  arrange(store_id, date)
+```
+
+A preview of the final dataset is shown below.
+
+```{r}
+#| label: final-data-preview
+head(sales[, c("store_id", "date", "total_quantity", "state_id", "day_id", "weekday", "month", "year")], 10)
+```
+
+# Data Validation / Sanity Checks
+
+Several checks were performed before using the data for graphs. The final dataset has no duplicate store-date observations, no missing dates after the calendar join, no missing quantities, and no negative quantities. Each store has exactly 1,941 daily observations. The expected row count is 10 stores times 1,941 dates, or 19,410 rows, which matches the actual final dataset.
+
+Independent spot checks were also done against the raw sales files. For selected store-day combinations, totals calculated directly from the raw product rows matched the prepared dataset exactly. Overall Walmart daily totals also reconciled exactly between the raw product-level data and the summed store-level data. Calendar checks confirmed that `d_1` maps to January 29, 2011 and `d_1941` maps to May 22, 2016, with no weekday mismatches found in the calendar.
+
+| Check | Result |
+|---|---:|
+| Unique stores | 10 |
+| Unique dates | 1,941 |
+| Expected final rows | 19,410 |
+| Actual final rows | 19,410 |
+| Duplicate store-date rows | 0 |
+| Missing dates | 0 |
+| Missing quantities | 0 |
+| Negative quantities | 0 |
+| Calendar weekday mismatches | 0 |
+| Raw spot-check differences | 0 |
+
+# Time Series Behavior
+
+![Total Walmart quantity sold over time.](../output/figures/01_total_sales_timeseries.png){#fig-total-sales}
+
+The overall time series sums `total_quantity` across all 10 stores for each date. Daily total sales generally rise over the sample period, so there appears to be an upward trend or changing level over time. The graph also shows repeated short-run fluctuations, which are consistent with weekly seasonality. The sharp drops near the end of each year correspond to Christmas Day, when total sales fall close to zero across the chain. The largest unexplained high spike occurs on March 6, 2016, when total sales reach 57,218 units.
+
+![Daily quantity sold by store.](../output/figures/02_sales_timeseries_by_store.png){#fig-store-sales}
+
+The store-level graph shows that stores differ in their normal sales levels. For example, `CA_3` is usually a higher-volume store, while `CA_4` is lower. The Christmas drops appear across essentially all store panels, which suggests these low outliers are chain-wide rather than caused by one store. Store-level differences support considering store fixed effects in a later model.
+
+# Weekly Seasonality
+
+![Overall Walmart quantity sold by weekday.](../output/figures/03_weekday_boxplot.png){#fig-weekday}
+
+Sales show a clear weekly pattern. In the overall daily series, median sales are highest on Sunday, at about 42,648 units, and lowest on Thursday, at about 30,757 units. Mean sales are highest on Saturday, at about 41,706 units, and lowest on Wednesday, at about 30,130 units. The boxplot shows that weekend sales are typically higher than weekday sales. This supports considering weekday dummy variables in the later econometric model.
+
+| Weekday | Mean Quantity | Median Quantity | Daily Observations |
+|---|---:|---:|---:|
+| Saturday | 41,706 | 42,488 | 278 |
+| Sunday | 41,304 | 42,648 | 278 |
+| Monday | 32,995 | 33,451 | 277 |
+| Tuesday | 30,500 | 30,901 | 277 |
+| Wednesday | 30,130 | 31,018 | 277 |
+| Thursday | 30,321 | 30,757 | 277 |
+| Friday | 34,357 | 34,864 | 277 |
+
+# Monthly / Annual Seasonality
+
+![Overall Walmart quantity sold by month.](../output/figures/04_month_boxplot.png){#fig-month}
+
+The month-of-year pattern is weaker than the weekday pattern, but there is still some evidence of monthly seasonality. Median sales are highest in July, at about 35,402 units, and lowest in November, at about 32,660 units. Mean sales are highest in August, at about 35,947 units, and lowest in December, at about 32,980 units. These differences suggest that month dummies may be useful later, but the evidence should not be overstated. Raw month comparisons may partly reflect the upward trend over time, and the sample has incomplete edge months: January 2011 only includes January 29-31, while May 2016 only includes May 1-22.
+
+| Month | Mean Quantity | Median Quantity | Daily Observations |
+|---|---:|---:|---:|
+| January | 33,832 | 32,668 | 158 |
+| February | 34,645 | 34,226 | 170 |
+| March | 34,340 | 33,126 | 186 |
+| April | 34,432 | 34,006 | 180 |
+| May | 34,085 | 33,497 | 177 |
+| June | 35,001 | 34,525 | 150 |
+| July | 35,122 | 35,402 | 155 |
+| August | 35,947 | 35,379 | 155 |
+| September | 35,479 | 34,214 | 150 |
+| October | 34,713 | 33,830 | 155 |
+| November | 33,291 | 32,660 | 150 |
+| December | 32,980 | 33,114 | 155 |
+
+# Holidays and Events
+
+![Average event-day sales lift relative to same store-weekday baseline.](../output/figures/05_event_impact_by_event.png){#fig-event-impact}
+
+The event-impact analysis compares each event-day store quantity with a normal baseline for the same store and weekday. The baseline is the median non-event sales quantity for that same store and weekday. Event lift is defined as event-day quantity minus that baseline. This avoids comparing, for example, a holiday Sunday to all ordinary weekdays.
+
+Several events are associated with lower-than-normal sales. Christmas has the largest negative average lift, about -3,382 units per store-event day. Thanksgiving has an average lift of about -944, New Year about -807, Mother's Day about -634, Father's Day about -589, and Halloween about -423. Labor Day is the largest positive event association, with an average lift of about +908 units. These are associations in the data, not causal estimates.
+
+![Event-day sales lift by store for largest event effects.](../output/figures/06_event_impact_by_store.png){#fig-event-store}
+
+The store-level event graph shows that event effects are not perfectly homogeneous across stores. Christmas is negative for all 10 stores, and Labor Day is positive for all 10 stores, but the size of these effects differs by store. This suggests that holiday/event dummy variables may be useful in a later model, and store-specific event interactions may also be worth considering if the later model focuses on differences across stores or states.
+
+# Outlier Investigation
+
+The outlier table identifies candidate anomalies using deviations from a centered 31-day rolling median of total Walmart quantity sold. The most important low outliers are Christmas Day in each observed year. For example, total quantity is 14 on December 25, 2015, 20 on December 25, 2013, 20 on December 25, 2014, 11 on December 25, 2012, and 13 on December 25, 2011. These low outliers affect most stores and are labeled as Christmas, a national event, in the calendar data. This is a fact from the data. A reasonable interpretation is that Christmas is a recurring holiday associated with unusually low sales, which supports considering a Christmas or holiday dummy later. It should not be described as a causal estimate from this EDA alone.
+
+The largest unexplained high outlier is March 6, 2016. Total Walmart quantity on that date is 57,218, compared with a local baseline of about 39,488, for a difference of about 17,730 units. The date is a Sunday, has no event name or event type in the calendar fields, and has SNAP active in California, Texas, and Wisconsin. The spike appears across all stores rather than being isolated to one location. California contributes about 51% of the increase, Wisconsin about 30%, and Texas about 19%.
+
+| Date | Direction | Quantity | Deviation | Weekday | Event | Scope |
+|---|---:|---:|---:|---|---|---|
+| 2015-12-25 | Low | 14 | -36,213 | Friday | Christmas | Across most stores |
+| 2013-12-25 | Low | 20 | -32,707 | Wednesday | Christmas | Across most stores |
+| 2014-12-25 | Low | 20 | -32,662 | Thursday | Christmas | Across most stores |
+| 2012-12-25 | Low | 11 | -32,336 | Tuesday | Christmas | Across most stores |
+| 2011-12-25 | Low | 13 | -28,738 | Sunday | Christmas | Across most stores |
+| 2016-03-06 | High | 57,218 | 17,566 | Sunday | None listed | Across most stores |
+| 2016-01-09 | High | 52,880 | 16,573 | Saturday | None listed | Across most stores |
+| 2016-05-15 | High | 59,921 | 16,116 | Sunday | None listed | Across most stores |
+
+The March 6 spike was checked against the raw product-level data. The raw product-level sum, aggregated store-level sum, and overall plotted value all equal 57,218, so the spike does not appear to be caused by a data-preparation or aggregation error. The top contributing stores are `CA_2`, `CA_1`, and `CA_3`, but no single store fully explains the anomaly. The product-level check also does not point to one suspicious product: among the top three stores, more than 1,300 products in each store are above their nearby baseline, and the top 10 products explain only about 7% to 10% of each top store's increase. The spike remains unexplained using the available calendar variables. Outside research would be needed to check possible promotions, local events, weather, data reporting issues, or other business factors.
+
+# Structural Break Investigation
+
+![28-day rolling average of total Walmart quantity sold.](../output/figures/07_spike_structural_break_screen.png){#fig-break}
+
+The March 6, 2016 spike should not be treated as a structural break just because it is large. A simple before-and-after check does not show a persistent level change immediately after the spike. The 28 days before the spike average about 41,942 units, while the 28 days after average about 41,609 units. The 29-56 days before average about 39,563 units, while the 29-56 days after average about 42,210 units. This suggests no strong evidence of a structural break from this EDA alone, although formal testing could be done later.
+
+# Modeling Implications
+
+The EDA suggests several variables to consider in a later econometric model. Weekday dummy variables are strongly supported by the weekend-versus-weekday pattern. Month-of-year dummies may be useful, but they should be interpreted carefully because trend may affect raw monthly comparisons. Holiday/event dummies are also supported, especially for recurring events like Christmas and Thanksgiving. Store fixed effects are likely useful because stores have different normal sales levels. Store-by-event interactions may be worth considering because event effects differ in size across stores. Finally, one-off outlier dummies may be appropriate for unexplained spikes such as March 6, 2016, but that decision should wait until the modeling stage.
+
+These are modeling candidates, not final model choices. The EDA suggests what should be tested later; it does not prove that each variable definitely belongs in the final model.
+
+# Conclusion
+
+The Walmart sales data show clear daily time-series structure. The strongest recurring pattern is weekly seasonality, with higher typical sales on weekends and lower sales during the middle of the week. Monthly differences are present but less clear because they may be mixed with trend. The most obvious low outliers are recurring Christmas Day drops, while the largest high spike, March 6, 2016, is real in the data but not explained by the available calendar event variables. Overall, the exploratory analysis supports considering weekday effects, month effects, event/holiday effects, store effects, trend, and selected outlier controls in later econometric modeling.
+
