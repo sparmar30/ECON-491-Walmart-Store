@@ -1,0 +1,365 @@
+---
+format:
+  revealjs:
+    css: walmart_presentation.css
+    embed-resources: true
+    slide-number: c/t
+    show-slide-number: all
+    controls: true
+    controls-layout: edges
+    controls-tutorial: false
+    progress: true
+    navigation-mode: linear
+    transition: fade
+    background-transition: fade
+    width: 1600
+    height: 900
+    margin: 0.045
+    center: false
+    hash: true
+    history: false
+    scrollable: false
+    auto-stretch: false
+    default-timing: 0
+slide-level: 2
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+## Walmart Sales Time Series Analysis {data-timing="20" .title-slide}
+
+<div class="course-label">ECON 491</div>
+
+<div class="title-rule"></div>
+
+<div class="presenters">Bo, Shumei, Joyce, Siddharth</div>
+
+::: {.notes}
+**Time: 0:20**
+
+- Each group member says their name.
+- Opening prompt: "We studied daily Walmart sales to understand what changes over time and what patterns may help with forecasting."
+- Face the audience after reading the title.
+:::
+
+## The M5 dataset {data-timing="50"}
+
+:::: {.columns .context-layout}
+::: {.column width="46%"}
+<div class="eyebrow">THE PURPOSE</div>
+
+The M5 competition used historical Walmart sales to study and forecast customer demand.
+
+<div class="plain-definition">
+<strong>Quantity sold</strong><br>
+The number of individual items customers purchased.
+</div>
+:::
+
+::: {.column width="50%"}
+<div class="eyebrow">WHAT THE DATA RECORD</div>
+
+- Daily sales for thousands of products
+- Products sold in 10 stores across 3 states
+- Dates, weekdays, holidays, and other calendar events
+- A history from January 2011 through May 2016
+:::
+::::
+
+::: {.notes}
+**Time: 0:50**
+
+- Assume the audience has never heard of M5.
+- Explain that demand means how much customers buy.
+- Clarify that quantity counts units, not dollars or revenue.
+- Transition: "The raw files are detailed, so we changed the level of the data for this analysis."
+:::
+
+## One observation in the final dataset {data-timing="55"}
+
+<div class="observation-statement">One Walmart store on one date</div>
+
+| Store | Date | Total quantity | State | Weekday | Event |
+|:--|:--|--:|:--|:--|:--|
+| CA_1 | March 6, 2016 | 6,829 units | California | Sunday | None listed |
+
+<div class="aggregation-line">
+Product quantities within CA_1 on this date were added together to produce 6,829 units.
+</div>
+
+<div class="variable-note"><strong>Store</strong> identifies the location. <strong>Date</strong> identifies the day. <strong>Calendar variables</strong> describe when that day occurred.</div>
+
+::: {.notes}
+**Time: 0:55**
+
+- Point to the example row and define each field from left to right.
+- Explain that a product no longer has its own row after aggregation.
+- Total quantity means the sum of every product sold in that store on that date.
+- Transition: "Here is how we moved from the original files to this simpler structure."
+:::
+
+## Preparing daily store sales {data-timing="55"}
+
+<div class="process-row">
+<div class="process-step">
+<span class="step-number">1</span>
+<strong>Combine</strong>
+<span>Train and test days form one continuous sales history.</span>
+</div>
+<div class="process-step">
+<span class="step-number">2</span>
+<strong>Reshape</strong>
+<span>Day columns such as <code>d_1</code> become individual rows.</span>
+</div>
+<div class="process-step">
+<span class="step-number">3</span>
+<strong>Sum</strong>
+<span>Product quantities are added within each store and day.</span>
+</div>
+<div class="process-step">
+<span class="step-number">4</span>
+<strong>Add calendar data</strong>
+<span>Each day receives its date, weekday, and event information.</span>
+</div>
+</div>
+
+<div class="result-line"><strong>Result:</strong> 19,410 rows with one row for every store and date.</div>
+
+::: {.notes}
+**Time: 0:55**
+
+- Walk through the four numbered steps without describing R code.
+- Emphasize that quantities were summed before adding calendar information.
+- Explain that train and test represent consecutive dates, not different stores or products.
+- Transition: "Before graphing the data, we checked that this structure was complete."
+:::
+
+## Data coverage and checks {data-timing="30"}
+
+<div class="stat-row">
+<div><strong>10</strong><span>stores</span></div>
+<div><strong>3</strong><span>states</span></div>
+<div><strong>1,941</strong><span>daily dates</span></div>
+<div><strong>19,410</strong><span>final rows</span></div>
+</div>
+
+<div class="date-range">January 29, 2011 <span>to</span> May 22, 2016</div>
+
+<div class="check-line">
+<span>No duplicate store and date rows</span>
+<span>No missing dates</span>
+<span>No missing quantities</span>
+</div>
+
+::: {.notes}
+**Time: 0:30**
+
+- Explain the row-count check: 10 stores multiplied by 1,941 dates equals 19,410 rows.
+- Say that selected totals also matched the raw product data exactly.
+- Do not read every check. Pause briefly on the complete date coverage.
+- Transition: "With the structure verified, we can look at how sales changed over time."
+:::
+
+## Sales generally rise over time {data-timing="55"}
+
+::: {.chart-stage .crop-chart-title}
+![](../output/figures/01_total_sales_timeseries.png){fig-alt="Line chart of total Walmart quantity sold each day from 2011 through May 2016."}
+:::
+
+<div class="takeaway-row"><span><strong>Trend:</strong> later years usually have higher sales</span><span><strong>Pattern:</strong> regular weekly movement</span><span><strong>Exceptions:</strong> Christmas drops and several high spikes</span></div>
+
+::: {.notes}
+**Time: 0:55**
+
+- The line adds all 10 stores for each date.
+- Point out the general rise from 2011 to 2016.
+- The repeated up-and-down pattern suggests weekly seasonality.
+- The drops near zero occur on Christmas Day.
+- Mention the high March 2016 value, which we investigate later.
+- Transition: "The overall line is useful, but stores do not all behave at the same level."
+:::
+
+## Stores have different sales levels {data-timing="50"}
+
+::: {.chart-stage .store-chart .crop-chart-title}
+![](../output/figures/02_sales_timeseries_by_store.png){fig-alt="Ten panels showing daily quantity sold for each Walmart store."}
+:::
+
+<div class="chart-caption"><strong>CA_3</strong> usually sells more units than <strong>CA_4</strong>. Christmas drops appear across nearly every store.</div>
+
+::: {.notes}
+**Time: 0:50**
+
+- Each small panel represents one store.
+- Compare CA_3 with CA_4 to make store differences concrete.
+- Point out that the sharp Christmas drops repeat across stores.
+- Explain why a later model may need store effects.
+- Transition: "The most consistent short-term pattern comes from the day of the week."
+:::
+
+## Weekends have the highest sales {data-timing="55"}
+
+::::: {.columns .chart-and-number}
+:::: {.column width="72%"}
+::: {.chart-stage .weekday-chart .crop-chart-title}
+![](../output/figures/03_weekday_boxplot.png){fig-alt="Boxplots comparing total Walmart quantity sold across the seven weekdays."}
+:::
+::::
+
+:::: {.column width="25%"}
+<div class="number-callout">
+<span>Highest median</span>
+<strong>42,648</strong>
+<span>units on Sunday</span>
+</div>
+
+<div class="number-callout secondary">
+<span>Lowest median</span>
+<strong>30,757</strong>
+<span>units on Thursday</span>
+</div>
+::::
+:::::
+
+::: {.notes}
+**Time: 0:55**
+
+- Explain that the line inside each box marks a typical value, the median.
+- Saturday and Sunday sit clearly above the middle of the week.
+- Sunday has the highest median, while Thursday has the lowest median.
+- The zero points come from Christmas dates, not ordinary Sundays or weekdays.
+- Transition: "Calendar events create another pattern beyond the normal weekday cycle."
+:::
+
+## Holidays affect sales differently {data-timing="60"}
+
+::: {.chart-stage .event-chart .crop-chart-title}
+![](../output/figures/05_event_impact_by_event.png){fig-alt="Horizontal bars showing average event-day sales lift compared with the same store and weekday on normal dates."}
+:::
+
+<div class="chart-caption"><strong>Christmas:</strong> about 3,382 fewer units per store. <strong>Labor Day:</strong> about 908 more units per store.</div>
+
+::: {.notes}
+**Time: 1:00**
+
+- Define the baseline before interpreting the bars: a normal non-event day for the same store and weekday.
+- Bars left of zero mean lower sales than that baseline. Bars right of zero mean higher sales.
+- Christmas has the strongest negative association. Thanksgiving and New Year are also below normal.
+- Labor Day has the largest positive association.
+- State clearly: these are associations, not proof that the events caused the changes.
+- Transition: "One unusually high date did not have a listed calendar event."
+:::
+
+## The March 2016 spike is real but unexplained {data-timing="60"}
+
+::::: {.columns .spike-layout}
+:::: {.column width="68%"}
+::: {.chart-stage .spike-chart .crop-chart-title}
+![](../output/figures/07_spike_structural_break_screen.png){fig-alt="Rolling average of total Walmart quantity with March 6, 2016 marked by a vertical dashed line."}
+:::
+::::
+
+:::: {.column width="28%"}
+::: {.spike-facts}
+**57,218 units**
+
+sold on March 6, 2016
+
+***
+
+Raw and prepared totals match.
+
+All stores contributed.
+
+Sales returned to their previous range.
+:::
+::::
+:::::
+
+<div class="qualification">The available calendar variables do not explain this one-day increase.</div>
+
+::: {.notes}
+**Time: 1:00**
+
+- The red line marks the spike date on the 28-day rolling-average graph.
+- The raw product sum, store-level sum, and plotted total all equal 57,218.
+- California contributed about half of the increase, but all states and stores contributed.
+- No single product dominated the increase.
+- The level before and after the spike is similar, so this EDA does not show a persistent structural break.
+- Possible explanations such as promotions or weather require information outside these files.
+- Transition: "Together, these patterns tell us what a forecasting model should consider next."
+:::
+
+## What we learned {data-timing="45"}
+
+<div class="finding-list">
+<div><strong>Time</strong><span>Sales levels generally rise across the sample.</span></div>
+<div><strong>Weekday</strong><span>Weekend demand is much higher than midweek demand.</span></div>
+<div><strong>Store</strong><span>Locations have different normal sales levels.</span></div>
+<div><strong>Events</strong><span>Some holidays show large, repeatable differences.</span></div>
+<div><strong>Outliers</strong><span>Known holidays and unexplained spikes need separate attention.</span></div>
+</div>
+
+<div class="next-question">Next question: which of these patterns meaningfully improves a forecasting model?</div>
+
+::: {.notes}
+**Time: 0:45**
+
+- Summarize the findings in your own words rather than reading the five lines.
+- The strongest recurring pattern is the weekly cycle.
+- Store and event information should also be tested in a later model.
+- Month effects remain possible, but the raw month comparison mixes seasonality with trend.
+- Transition: "That completes our exploratory analysis. We are happy to take questions."
+:::
+
+## Questions {data-timing="0" .questions-slide}
+
+<div class="questions-word">Questions?</div>
+
+<div class="questions-names">Bo, Shumei, Joyce, Siddharth</div>
+
+<div class="presenter-hint">Backup slides follow</div>
+
+::: {.notes}
+**Time: remaining presentation time**
+
+- Thank the audience.
+- Stop on this slide unless a question requires one of the backup figures.
+- Press S before presenting to open speaker view. Use the next arrow only when moving into the appendix.
+:::
+
+## Monthly sales patterns {data-visibility="uncounted" data-timing="0" .appendix-slide}
+
+<div class="appendix-label">BACKUP</div>
+
+::: {.chart-stage .month-chart .crop-chart-title}
+![](../output/figures/04_month_boxplot.png){fig-alt="Boxplots comparing total Walmart quantity sold across months of the year."}
+:::
+
+<div class="chart-caption">The month pattern is weaker than the weekday pattern. Trend and incomplete edge months limit a direct comparison.</div>
+
+::: {.notes}
+- Use only if asked about longer seasonal cycles.
+- July has the highest median. November has the lowest median.
+- January 2011 and May 2016 are incomplete months.
+- A later model should separate trend from month effects before interpreting them.
+:::
+
+## Event effects differ by store {data-visibility="uncounted" data-timing="0" .appendix-slide}
+
+<div class="appendix-label">BACKUP</div>
+
+::: {.chart-stage .event-store-chart .crop-chart-title}
+![](../output/figures/06_event_impact_by_store.png){fig-alt="Ten store panels comparing event-day sales lift for the events with the largest average effects."}
+:::
+
+<div class="chart-caption">Christmas is negative and Labor Day is positive across all stores, but the size of each association varies.</div>
+
+::: {.notes}
+- Use only if asked whether event patterns are the same for every store.
+- Christmas is negative in every panel. Labor Day is positive in every panel.
+- Different effect sizes support testing store and event interactions later.
+- Repeat that these are descriptive associations rather than causal estimates.
+:::
