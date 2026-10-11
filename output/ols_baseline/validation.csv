@@ -1,0 +1,15 @@
+"check","value"
+"Stores",10
+"States",3
+"Dates per store",1941
+"Total rows",19410
+"Training rows",19130
+"Test rows",280
+"Duplicate store-date keys",0
+"Quantity reconciliation mismatches",0
+"Zero-sales price imputations",24
+"Missing weighted prices",0
+"Positive-sales rows missing valid prices",0
+"Full-rank models",10
+"Finite predictions",280
+"Negative predictions",0
