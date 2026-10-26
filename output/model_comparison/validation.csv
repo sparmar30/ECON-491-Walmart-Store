@@ -1,0 +1,15 @@
+"check","value"
+"Unique modeling rows",19410
+"Stores",10
+"Dates per store",1941
+"Imputed prices preserved",24
+"Validation folds",3
+"Tuning configurations",12
+"Final models including benchmark",40
+"Finite predictions",1120
+"Negative predictions",0
+"Calendar windows checked",12
+"Hand-calculated recursion passed",1
+"Holdout target perturbation passed",1
+"Benchmark reproduction passed",1
+"Saved metrics independently verified",1
